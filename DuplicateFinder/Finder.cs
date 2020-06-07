@@ -4,6 +4,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net.Http.Headers;
 using System.Runtime.Serialization.Formatters;
 using System.Security.Cryptography;
 using System.Threading;
@@ -28,7 +29,15 @@ namespace DuplicateFinder
                 cnt++;
             }
             Task.WaitAll(tasks);
-            return dict.ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+            Dictionary<string, IList<string>> retValue = new Dictionary<string, IList<string>>();
+            foreach (var kvp in dict)
+            {
+                if (kvp.Value.Count > 1)
+                {
+                    retValue[kvp.Key] = kvp.Value;
+                }
+            }
+            return retValue;
         }
 
         private static void HandleFiles(string path, ConcurrentDictionary<string, IList<string>> dict)

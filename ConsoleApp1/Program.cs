@@ -14,6 +14,7 @@ namespace ConsoleApp1
             Console.Write("Path: ");
             string[] path = Console.ReadLine().Split(" ");
             var dict = Finder.FindDuplicates(path);
+            Console.WriteLine("We are here!");
             foreach(var d in dict)
             {
                 if (d.Value.Count > 1)
