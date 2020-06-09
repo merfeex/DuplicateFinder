@@ -16,19 +16,28 @@ namespace DuplicateFinder
     {
         public static IDictionary<string, IList<string>> FindDuplicates(params string[] paths)
         {
-            Task[] tasks = new Task[paths.Length];
-            var dict = new ConcurrentDictionary<string, IList<string>>();
-            int cnt = 0;
-            foreach(string path in paths)
+            var dirs = new Queue<string>();
+            foreach(var path in paths)
             {
                 if (!File.GetAttributes(path).HasFlag(FileAttributes.Directory))
                 {
                     throw new ArgumentException("Not a directory: " + path);
                 }
-                tasks[cnt] = Task.Run(() => HandleFiles(path, dict));
-                cnt++;
+                if (!dirs.Contains(path))
+                {
+                    dirs.Enqueue(path);
+                }
+                GetDirectories(dirs, path);
+            }
+
+            Task[] tasks = new Task[dirs.Count];            
+            var dict = new ConcurrentDictionary<string, IList<string>>();
+            int cnt = dirs.Count;
+            for (int i = 0; i < cnt; i++) {
+                tasks[i] = Task.Run(() => HandleFiles(dirs.Dequeue(), dict));
             }
             Task.WaitAll(tasks);
+
             Dictionary<string, IList<string>> retValue = new Dictionary<string, IList<string>>();
             foreach (var kvp in dict)
             {
@@ -40,22 +49,29 @@ namespace DuplicateFinder
             return retValue;
         }
 
+        private static void GetDirectories(Queue<string> queue, string directory)
+        {
+            try
+            {
+                var dirs = Directory.GetDirectories(directory);
+                foreach(var d in dirs)
+                {
+                    if (!queue.Contains(d))
+                    {
+                        queue.Enqueue(d);
+                    }
+                    GetDirectories(queue, d);
+                }
+            }
+            catch (IOException)
+            {
+                //skip directory
+            }
+        }
+
         private static void HandleFiles(string path, ConcurrentDictionary<string, IList<string>> dict)
         {
-            // exception on App Data folder
-            string[] directories = Directory.GetDirectories(path);
             string[] files = Directory.GetFiles(path);
-            Task[] tasks = new Task[directories.Length];
-            int cnt = 0;
-            foreach (string s in directories)
-            {
-                try
-                {
-                    tasks[cnt] = Task.Run(() => HandleFiles(s, dict));
-                    cnt++;
-                }
-                catch (IOException) { }
-            }
             for (int i = 0; i < files.Length; i++)
             {
                 try
@@ -65,7 +81,6 @@ namespace DuplicateFinder
                 }
                 catch (IOException) { }
             }
-            Task.WaitAll(tasks);
         }
 
         private static string GetHash(string fileName)

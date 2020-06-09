@@ -11,21 +11,16 @@ namespace ConsoleApp1
     {
         static void Main()
         {
-            Console.Write("Path: ");
-            string[] path = Console.ReadLine().Split(" ");
-            var dict = Finder.FindDuplicates(path);
-            Console.WriteLine("We are here!");
-            foreach(var d in dict)
+            Queue<string> q = new Queue<string>();
+            q.Enqueue("a");
+            q.Enqueue("a");
+            q.Enqueue("a");
+            q.Enqueue("a");
+            q.Enqueue("a");
+            q.Enqueue("a");
+            for (int i = 0; i < q.Count; i++)
             {
-                if (d.Value.Count > 1)
-                {
-                    Console.Write(d.Key + $"!{d.Value.Count}!: ");
-                    foreach (string s in d.Value)
-                    {
-                        Console.Write($"[{s}] ");
-                    }
-                    Console.WriteLine();
-                }
+                Console.WriteLine($"{i} - {q.Dequeue()} - {q.Count}");
             }
         }
     }
