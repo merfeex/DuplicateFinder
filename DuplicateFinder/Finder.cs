@@ -32,9 +32,12 @@ namespace DuplicateFinder
 
             Task[] tasks = new Task[dirs.Count];            
             var dict = new ConcurrentDictionary<string, IList<string>>();
-            int cnt = dirs.Count;
-            for (int i = 0; i < cnt; i++) {
-                tasks[i] = Task.Run(() => HandleFiles(dirs.Dequeue(), dict));
+            int cnt = 0;
+            while(dirs.Count > 0)
+            {
+                string dir = dirs.Dequeue();
+                tasks[cnt] = Task.Run(() => HandleFiles(dir, dict));
+                cnt++;
             }
             Task.WaitAll(tasks);
 
@@ -54,7 +57,7 @@ namespace DuplicateFinder
             try
             {
                 var dirs = Directory.GetDirectories(directory);
-                foreach(var d in dirs)
+                foreach (var d in dirs)
                 {
                     if (!queue.Contains(d))
                     {
@@ -67,17 +70,32 @@ namespace DuplicateFinder
             {
                 //skip directory
             }
+            catch (UnauthorizedAccessException)
+            {
+                //skip directory
+            }
         }
 
         private static void HandleFiles(string path, ConcurrentDictionary<string, IList<string>> dict)
         {
-            string[] files = Directory.GetFiles(path);
+            string[] files;
+            try
+            {
+                files = Directory.GetFiles(path);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return;
+            }
             for (int i = 0; i < files.Length; i++)
             {
                 try
                 {
                     string hash = GetHash(files[i]);
-                    dict.AddOrUpdate(hash, new List<string> { files[i] }, (k, v) => { v.Add(files[i]); return v; });
+                    if (hash != string.Empty)
+                    {
+                        dict.AddOrUpdate(hash, new List<string> { files[i] }, (k, v) => { v.Add(files[i]); return v; });
+                    }
                 }
                 catch (IOException) { }
             }
@@ -87,10 +105,17 @@ namespace DuplicateFinder
         {
             using (MD5 hasher = MD5.Create())
             {
-                using (Stream stream = File.OpenRead(fileName))
+                try
                 {
-                    byte[] hash = hasher.ComputeHash(stream);
-                    return BitConverter.ToString(hash).Replace("-", "").ToLower();
+                    using (Stream stream = File.OpenRead(fileName))
+                    {
+                        byte[] hash = hasher.ComputeHash(stream);
+                        return BitConverter.ToString(hash).Replace("-", "").ToLower();
+                    }
+                }
+                catch (UnauthorizedAccessException)
+                {
+                    return string.Empty;
                 }
             }
         }

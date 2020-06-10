@@ -3,7 +3,9 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
+using System.Security.Cryptography;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace ConsoleApp1
 {
@@ -11,16 +13,16 @@ namespace ConsoleApp1
     {
         static void Main()
         {
-            Queue<string> q = new Queue<string>();
-            q.Enqueue("a");
-            q.Enqueue("a");
-            q.Enqueue("a");
-            q.Enqueue("a");
-            q.Enqueue("a");
-            q.Enqueue("a");
-            for (int i = 0; i < q.Count; i++)
+            string path = @"C:\Users\merfeex";
+            var dups = Finder.FindDuplicates(path);
+            foreach (var kvp in dups)
             {
-                Console.WriteLine($"{i} - {q.Dequeue()} - {q.Count}");
+                Console.WriteLine(kvp.Key);
+                foreach (var v in kvp.Value)
+                {
+                    Console.WriteLine(v);
+                }
+                Console.WriteLine(new string('-', 80));
             }
         }
     }
