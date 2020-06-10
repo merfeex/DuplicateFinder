@@ -1,13 +1,8 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Net.Http.Headers;
-using System.Runtime.Serialization.Formatters;
 using System.Security.Cryptography;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace DuplicateFinder
@@ -54,25 +49,29 @@ namespace DuplicateFinder
 
         private static void GetDirectories(Queue<string> queue, string directory)
         {
+            string[] dirs;
             try
             {
-                var dirs = Directory.GetDirectories(directory);
-                foreach (var d in dirs)
+                dirs = Directory.GetDirectories(directory);
+            }
+            catch (Exception e)
+            {
+                if ((e is IOException) || (e is UnauthorizedAccessException))
                 {
-                    if (!queue.Contains(d))
-                    {
-                        queue.Enqueue(d);
-                    }
-                    GetDirectories(queue, d);
+                    return;
+                }
+                else
+                {
+                    throw e;
                 }
             }
-            catch (IOException)
+            foreach (var d in dirs)
             {
-                //skip directory
-            }
-            catch (UnauthorizedAccessException)
-            {
-                //skip directory
+                if (!queue.Contains(d))
+                {
+                    queue.Enqueue(d);
+                }
+                GetDirectories(queue, d);
             }
         }
 
